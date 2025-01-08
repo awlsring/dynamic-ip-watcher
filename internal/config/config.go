@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -165,9 +167,11 @@ func Load() (*Config, error) {
 	cfg := &Config{}
 
 	configPath := determineConfigPath()
+	log.Info().Msgf("Loading configuration from %s", configPath)
 
 	err := loadConfigFromFile(cfg, configPath)
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to load configuration")
 		return nil, err
 	}
 

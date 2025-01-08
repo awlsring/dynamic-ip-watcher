@@ -69,7 +69,10 @@ func loadStorage(cfg *config.Config) gateway.Storage {
 	return local_storage.New(cfg.Storage.Directory)
 }
 
+var version = "0.0.0"
+
 func main() {
+	log.Info().Msgf("Starting dynamic-ip-watcher version %s", version)
 	cfg, err := config.Load()
 	panicOnError(err)
 
