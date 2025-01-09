@@ -44,7 +44,7 @@ func (d *DiscordWebhookNotifier) SendEventMessage(ctx context.Context, event eve
 	}
 
 	discordMessage := DiscordWebhookMessage{
-		Username: Username,
+		Username: d.username,
 		Content:  event.AsMessage(),
 	}
 

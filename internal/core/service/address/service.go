@@ -2,6 +2,7 @@ package address
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/awlsring/dynamic-ip-watcher/internal/core/domain/event"
 	"github.com/awlsring/dynamic-ip-watcher/internal/ports/gateway"
@@ -82,7 +83,8 @@ func (s *Service) DetectAndHandleAddressChange(ctx context.Context) error {
 			log.Error().Err(err).Msg("Failed to update DNS A record")
 			return err
 		}
-		eventMessage = event.NewChangeEvent("IP address changed from " + previousIP.String() + " to " + currentIP.String() + ". DNS Record" + s.dnsUpdater.RecordName() + " updated with new address.")
+		message := fmt.Sprintf("IP address changed from %s to %s. DNS Record %s updated with new address.", previousIP.String(), currentIP.String(), s.dnsUpdater.RecordName())
+		eventMessage = event.NewChangeEvent(message)
 	}
 
 	return nil

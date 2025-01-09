@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	DefaultConfigPath = "config.json"
-	DefaultStorageDir = "storage"
+	DefaultConfigPath = "/var/lib/dynamic-ip-watcher/config.json"
+	DefaultStorageDir = "/var/lib/dynamic-ip-watcher"
 
 	ConfigPathEnvVar     = "CONFIG_PATH"
 	ZoneIDEnvVar         = "ZONE_ID"
@@ -73,7 +73,17 @@ func getEnvOrDefault(envVar, defaultValue string) string {
 	return value
 }
 
+// check if a --config-path arg was passed in,
+// if not, check if the CONFIG_PATH env var is set
+// if not, use the default path
 func determineConfigPath() string {
+	args := os.Args[1:]
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--config-path" && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+
 	value := os.Getenv(ConfigPathEnvVar)
 	if value == "" {
 		return DefaultConfigPath

@@ -47,6 +47,8 @@
       default = pkgs.dynamic-ip-watcher;
     });
 
+    nixosModules.dynamic-ip-watcher = import ./nix/module.nix self.overlays.default;
+
     devShells = forAllSystems ({
       pkgs,
       system,
