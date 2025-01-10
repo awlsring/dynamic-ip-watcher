@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"reflect"
 
 	"github.com/rs/zerolog/log"
 )
@@ -110,6 +111,10 @@ func loadConfigFromFile(cfg *Config, path string) error {
 		return err
 	}
 
+	if rawConfig.Storage.Directory == "" {
+		rawConfig.Storage.Directory = DefaultStorageDir
+	}
+
 	cfg.DNSRecord = rawConfig.DNSRecord
 	cfg.Storage = rawConfig.Storage
 
@@ -128,6 +133,7 @@ func loadConfigFromFile(cfg *Config, path string) error {
 			if err := json.Unmarshal(rawNotifier, &discordConfig); err != nil {
 				return err
 			}
+			replaceFilePaths(&discordConfig)
 			notifier = discordConfig
 		default:
 			return errors.New("unknown notifier type: " + base.Type)
@@ -136,7 +142,61 @@ func loadConfigFromFile(cfg *Config, path string) error {
 		cfg.Notifiers = append(cfg.Notifiers, notifier)
 	}
 
+	return replaceFilePaths(cfg)
+}
+
+func replaceFilePaths(structs ...interface{}) error {
+	for _, s := range structs {
+		v := reflect.ValueOf(s)
+		if v.Kind() == reflect.Ptr {
+			v = v.Elem()
+		}
+
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Field(i)
+
+			if field.Kind() == reflect.String && field.String() != "" {
+				if isFilePath(field.String()) {
+					content, err := tryReadFile(field.String())
+					if err == nil {
+						field.SetString(content)
+					}
+				}
+			}
+
+			if field.Kind() == reflect.Struct {
+				if err := replaceFilePaths(field.Addr().Interface()); err != nil {
+					return err
+				}
+			}
+
+			if field.Kind() == reflect.Slice && field.Type().Elem().Kind() == reflect.Struct {
+				for j := 0; j < field.Len(); j++ {
+					elem := field.Index(j).Addr().Interface()
+					if err := replaceFilePaths(elem); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
 	return nil
+}
+
+func isFilePath(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
+}
+
+func tryReadFile(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }
 
 func setConfigFromEnv(cfg *Config) {
